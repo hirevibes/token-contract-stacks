@@ -1,0 +1,11 @@
+[project]
+name = "vibes-token"
+requirements = []
+
+[contracts.sip-010-trait]
+path = "contracts/sip-010-trait.clar"
+depends_on = []
+
+[contracts.vibes-token]
+path = "contracts/vibes-token.clar"
+depends_on = []
