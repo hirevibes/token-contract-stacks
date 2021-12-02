@@ -8,7 +8,7 @@
 - Decrease Allowance (In Progress)
 - TransferFrom (In Progress)
 
-## Tests
+## Tests (In Progress)
 - Transfer
 - Burn
 - Approve
