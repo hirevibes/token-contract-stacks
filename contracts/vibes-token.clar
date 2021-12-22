@@ -98,11 +98,9 @@
     (begin
         (asserts! (> amount u0) (err ERR-ZERO-VALUE))
         (asserts! (>= (allowance-of tx-sender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
-        (begin
          (try! (ft-transfer? vibes-token amount owner recipient))
          (decrease-allowance amount tx-sender owner)
          (ok true)
-        )
     )
 )
 
