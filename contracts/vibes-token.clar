@@ -3,6 +3,7 @@
 (define-constant ERR-NON-SUFFICIENT-FUNDS u2)
 (define-constant ERR-INVALID-SPENDER u10)
 (define-constant ERR-ZERO-VALUE u11)
+(define-constant ERR-NOT-ENOUGH-APPROVED-BALANCE u12)
 (define-constant contract-owner tx-sender)
 ;; Storage
 (define-data-var token-uri (optional (string-utf8 256)) none)
@@ -87,9 +88,21 @@
     (begin
         (asserts! ( > amount u0) (err ERR-ZERO-VALUE))
         (asserts! (is-eq sender tx-sender) (err ERR-UNAUTHORIZED))
+        (asserts! (> (get-balance-of sender) u0) (err ERR-ZERO-VALUE))
         (try! (ft-transfer? vibes-token amount sender recipient))
-        (print memo)
         (ok true)
+    )
+)
+
+(define-public (transfer-from (amount uint) (owner principal) (recipient principal) )
+    (begin
+        (asserts! (> amount u0) (err ERR-ZERO-VALUE))
+        (asserts! (>= (allowance-of tx-sender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
+        (begin
+         (try! (ft-transfer? vibes-token amount owner recipient))
+         (decrease-allowance amount tx-sender owner)
+         (ok true)
+        )
     )
 )
 
@@ -121,7 +134,7 @@
 )
 
 ;; mint
-(define-public (mint (amount uint) (recipient principal))
+(define-private (mint (amount uint) (recipient principal))
     (begin 
         (asserts! ( > amount u0) (err ERR-ZERO-VALUE))
         (var-set total-supply (+ (var-get total-supply) amount))
@@ -129,4 +142,4 @@
     )
 )
 
-(mint u35000000000000000 'ST2S21NW2QW5F8XEMD2SGA7K2CX37V0MHVKDD1WVT)
+(mint u35000000000000000 tx-sender)
