@@ -5,13 +5,13 @@
 - Burn
 - Approve
 - Mint
+- TransferFrom
 - Decrease Allowance (In Progress)
-- TransferFrom (In Progress)
 
-## Tests (In Progress)
+
+## Tests
 - Transfer
 - Burn
-- Approve
-- Mint
-- Decrease Allowance
-- TransferFrom
+- Approve  (In Progress)
+- Decrease Allowance  (In Progress)
+- TransferFrom  (In Progress)
