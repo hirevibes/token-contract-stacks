@@ -48,8 +48,8 @@ Clarinet.test({
                 types.principal(spender.address)
             ], deployer.address),
             Tx.contractCall(contract_name, "allowance-of", [
-                types.principal(spender.address),
-                types.principal(deployer.address)
+                types.principal(deployer.address),
+                types.principal(spender.address)
             ], deployer.address)
         ])
         block.receipts[0].result.expectOk().expectBool(true)
@@ -101,3 +101,31 @@ Clarinet.test({
     }
 })
 
+Clarinet.test({
+    name: "Ensume that owner can decrease the approve allowance for spender",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get("deployer")!;
+        const spender = accounts.get("wallet_1")!;
+        const approved_amount = 1000000000000;
+        const decreased_amount =  100000000000;
+        const block  = chain.mineBlock([
+            Tx.contractCall(contract_name, "approve",[
+                types.uint(approved_amount),
+                types.principal(deployer.address),
+                types.principal(spender.address)
+            ] , deployer.address), 
+            Tx.contractCall(contract_name, "decrease-approved-allowance", [
+                types.uint(decreased_amount),
+                types.principal(deployer.address),
+                types.principal(spender.address)
+            ], deployer.address),
+            Tx.contractCall(contract_name, "allowance-of", [
+                types.principal(deployer.address),
+                types.principal(spender.address)
+            ], deployer.address)
+        ])
+        block.receipts[0].result.expectOk().expectBool(true)
+        block.receipts[1].result.expectOk().expectBool(true)
+        block.receipts[2].result.expectOk().expectUint(approved_amount - decreased_amount)
+    }
+})
