@@ -84,7 +84,7 @@
 (define-public (donate (amount uint)) 
     (stx-transfer? amount tx-sender contract-owner))
 
-(define-public (allowance-of (spender principal) (owner principal))
+(define-public (allowance-of (owner principal) (spender principal) )
     (ok (get-allowance-of spender owner))
 )
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
@@ -129,6 +129,14 @@
     (begin 
         (asserts! (is-eq tx-sender owner) (err ERR-INVALID-SPENDER))
         (increase-allowance amount spender tx-sender)
+    )
+)
+
+(define-public (decrease-approved-allowance (amount uint ) (owner principal) (spender principal))
+    (begin 
+        (asserts! (is-eq tx-sender owner) (err ERR-UNAUTHORIZED))
+        (decrease-allowance amount spender owner)
+        (ok true)
     )
 )
 
