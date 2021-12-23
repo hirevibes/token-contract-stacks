@@ -12,6 +12,6 @@
 ## Tests
 - Transfer
 - Burn
-- Approve  (In Progress)
+- Approve
 - Decrease Allowance  (In Progress)
-- TransferFrom  (In Progress)
+- Transfer From  (In Progress)
