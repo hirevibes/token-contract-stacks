@@ -36,6 +36,28 @@ Clarinet.test({
 })
 
 Clarinet.test({
+    name: "Ensure that owner can approve balance for spender",
+    fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get("deployer")!;
+        const spender  = accounts.get("wallet_1")!;
+        const amount = 100000000000;
+        const block = chain.mineBlock([
+            Tx.contractCall(contract_name, "approve", [
+                types.uint(amount),
+                types.principal(deployer.address),
+                types.principal(spender.address)
+            ], deployer.address),
+            Tx.contractCall(contract_name, "allowance-of", [
+                types.principal(spender.address),
+                types.principal(deployer.address)
+            ], deployer.address)
+        ])
+        block.receipts[0].result.expectOk().expectBool(true)
+        block.receipts[1].result.expectOk().expectUint(amount)
+    }
+})
+
+Clarinet.test({
     name: "Ensure that contract owner can set token uri",
     async fn (chain: Chain, accounts: Map<string, Account>) {
         const deployer =  accounts.get("deployer")!;
@@ -78,3 +100,4 @@ Clarinet.test({
 
     }
 })
+
