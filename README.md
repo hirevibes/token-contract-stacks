@@ -6,12 +6,12 @@
 - Approve
 - Mint
 - TransferFrom
-- Decrease Allowance (In Progress)
+- Decrease Allowance
 
 
 ## Tests
 - Transfer
 - Burn
 - Approve
-- Decrease Allowance  (In Progress)
+- Decrease Allowance
 - Transfer From  (In Progress)
