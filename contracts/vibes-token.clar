@@ -41,15 +41,15 @@
     (is-eq contract-owner tx-sender)
 )
 
-(define-private (allowance-of (spender principal) (owner principal))
+(define-private (get-allowance-of (spender principal) (owner principal))
     (default-to u0
         (get allowance (map-get? allowances {spender: spender, owner: owner}))))
 
 ;; Increase-Allowance
 (define-private (increase-allowance (amount uint) (spender principal) (owner principal))
-    (let ((allowance (allowance-of spender owner)))
+    (let ((allowance (get-allowance-of spender owner)))
         (begin 
-            (asserts! ( <= amount u0) (err ERR-ZERO-VALUE))
+            (asserts! ( >= amount u0) (err amount))
             (map-set allowances {spender: spender, owner: owner}
             {allowance:  (+ allowance amount)})
             (ok true)
@@ -59,7 +59,7 @@
 
 ;; Decrease-Allowance
 (define-private (decrease-allowance (amount uint) (spender principal) (owner principal))
-    (let ((allowance (allowance-of spender owner)))
+    (let ((allowance (get-allowance-of spender owner)))
         (if (or (> amount allowance) (<= amount u0))
             true
             (begin 
@@ -78,12 +78,15 @@
 (define-private (get-balance-of (owner principal))
     (ft-get-balance vibes-token owner)
 )
+
 ;; PUBLIC FUNCTIONS
 
 (define-public (donate (amount uint)) 
     (stx-transfer? amount tx-sender contract-owner))
 
-
+(define-public (allowance-of (spender principal) (owner principal))
+    (ok (get-allowance-of spender owner))
+)
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
     (begin
         (asserts! ( > amount u0) (err ERR-ZERO-VALUE))
@@ -97,7 +100,7 @@
 (define-public (transfer-from (amount uint) (owner principal) (recipient principal) )
     (begin
         (asserts! (> amount u0) (err ERR-ZERO-VALUE))
-        (asserts! (>= (allowance-of tx-sender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
+        (asserts! (>= (get-allowance-of tx-sender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
          (try! (ft-transfer? vibes-token amount owner recipient))
          (decrease-allowance amount tx-sender owner)
          (ok true)
@@ -122,12 +125,10 @@
 )
 
 ;; approve
-(define-public (approve (amount uint) (spender principal))
+(define-public (approve (amount uint) (owner principal) (spender principal))
     (begin 
-        (asserts! (is-eq tx-sender spender) (err ERR-INVALID-SPENDER))
-        (asserts! ( > amount u0) (err ERR-NON-SUFFICIENT-FUNDS))
-        (print (increase-allowance amount spender tx-sender))
-        
+        (asserts! (is-eq tx-sender owner) (err ERR-INVALID-SPENDER))
+        (increase-allowance amount spender tx-sender)
     )
 )
 
