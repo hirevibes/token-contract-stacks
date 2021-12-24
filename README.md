@@ -14,4 +14,4 @@
 - Burn
 - Approve
 - Decrease Allowance
-- Transfer From  (In Progress)
+- Transfer From
