@@ -129,3 +129,47 @@ Clarinet.test({
         block.receipts[2].result.expectOk().expectUint(approved_amount - decreased_amount)
     }
 })
+
+
+Clarinet.test({
+    name: "Ensume that spender can transform the token from approved allowance",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const owner = accounts.get("deployer")!;
+        const spender = accounts.get("wallet_1")!;
+        const recipient = accounts.get("wallet_2")!;
+
+        const assetMaps = chain.getAssetsMaps();
+        const balance = assetMaps.assets[asset_id][owner.address];
+
+
+        const approved_amount = 1000000000000;
+        const transferred_amount = 10000000000;
+        const block = chain.mineBlock([
+            Tx.contractCall(contract_name, "approve",[
+                types.uint(approved_amount),
+                types.principal(owner.address),
+                types.principal(spender.address)
+            ] , owner.address), 
+            Tx.contractCall(contract_name, "transfer-from",[
+                types.uint(transferred_amount),
+                types.principal(owner.address),
+                types.principal(spender.address),
+                types.principal(recipient.address)
+            ] , spender.address),
+            Tx.contractCall(contract_name, "allowance-of", [
+                types.principal(owner.address),
+                types.principal(spender.address)
+            ], owner.address)
+        ])
+        
+        block.receipts[0].result.expectOk().expectBool(true);
+        block.receipts[1].result.expectOk().expectBool(true);
+        block.receipts[1].events.expectFungibleTokenTransferEvent(
+            transferred_amount,
+            owner.address,
+            recipient.address,
+            `${owner.address}${asset_id_postfix}`
+        )
+        block.receipts[2].result.expectOk().expectUint(approved_amount - transferred_amount)
+    }
+})
