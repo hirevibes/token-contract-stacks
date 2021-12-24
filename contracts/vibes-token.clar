@@ -97,12 +97,13 @@
     )
 )
 
-(define-public (transfer-from (amount uint) (owner principal) (recipient principal) )
+(define-public (transfer-from (amount uint) (owner principal) (spender principal) (recipient principal) )
     (begin
         (asserts! (> amount u0) (err ERR-ZERO-VALUE))
-        (asserts! (>= (get-allowance-of tx-sender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
+        (asserts! (is-eq tx-sender spender) (err ERR-UNAUTHORIZED))
+        (asserts! (>= (get-allowance-of spender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
          (try! (ft-transfer? vibes-token amount owner recipient))
-         (decrease-allowance amount tx-sender owner)
+         (decrease-allowance amount spender owner)
          (ok true)
     )
 )
