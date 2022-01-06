@@ -36,6 +36,29 @@ Clarinet.test({
 })
 
 Clarinet.test({
+    name: "Ensure that zero token should not be transferred",
+    async fn(chain: Chain, accounts: Map<string, Account>, contracts: Map<string, Contract>) {
+        let deployer = accounts.get("deployer")!;
+        let wallet_1 = accounts.get("wallet_1")!;
+        let wallet_2 = accounts.get("wallet_2")!;
+        const amount = 1100000;
+        const deployer_principal = types.principal(deployer.address)
+        const wallet_1_principal = types.principal(wallet_1.address)
+        const wallet_2_principal = types.principal(wallet_2.address)
+
+        let block = chain.mineBlock([
+            Tx.contractCall(contract_name, "transfer", [
+                types.uint(amount),
+                wallet_2_principal, 
+                wallet_1_principal,
+                types.none()
+            ], wallet_2.address),
+        ]);
+        block.receipts[0].result.expectErr().expectUint(1);
+    }
+})
+
+Clarinet.test({
     name: "Ensure that owner can approve balance for spender",
     fn(chain: Chain, accounts: Map<string, Account>) {
         const deployer = accounts.get("deployer")!;
@@ -75,7 +98,7 @@ Clarinet.test({
         const block = chain.mineBlock([
             Tx.contractCall(contract_name, "set-token-uri", [types.utf8("https://hirevibes.io")], wallet_1.address)
         ]);
-        block.receipts[0].result.expectErr().expectUint(1)
+        block.receipts[0].result.expectErr().expectUint(101)
     }
 })
 
@@ -98,35 +121,6 @@ Clarinet.test({
         block.receipts[1].result.expectOk().expectUint(total_supply - burn_amount)
         block.receipts[2].result.expectOk().expectUint(balance - burn_amount)
 
-    }
-})
-
-Clarinet.test({
-    name: "Ensume that owner can decrease the approve allowance for spender",
-    async fn(chain: Chain, accounts: Map<string, Account>) {
-        const deployer = accounts.get("deployer")!;
-        const spender = accounts.get("wallet_1")!;
-        const approved_amount = 1000000000000;
-        const decreased_amount =  100000000000;
-        const block  = chain.mineBlock([
-            Tx.contractCall(contract_name, "approve",[
-                types.uint(approved_amount),
-                types.principal(deployer.address),
-                types.principal(spender.address)
-            ] , deployer.address), 
-            Tx.contractCall(contract_name, "decrease-approved-allowance", [
-                types.uint(decreased_amount),
-                types.principal(deployer.address),
-                types.principal(spender.address)
-            ], deployer.address),
-            Tx.contractCall(contract_name, "allowance-of", [
-                types.principal(deployer.address),
-                types.principal(spender.address)
-            ], deployer.address)
-        ])
-        block.receipts[0].result.expectOk().expectBool(true)
-        block.receipts[1].result.expectOk().expectBool(true)
-        block.receipts[2].result.expectOk().expectUint(approved_amount - decreased_amount)
     }
 })
 
