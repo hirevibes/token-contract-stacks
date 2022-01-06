@@ -1,14 +1,14 @@
 (define-fungible-token vibes-token)
-(define-constant ERR-UNAUTHORIZED u1)
-(define-constant ERR-NON-SUFFICIENT-FUNDS u2)
-(define-constant ERR-INVALID-SPENDER u10)
-(define-constant ERR-ZERO-VALUE u11)
-(define-constant ERR-NOT-ENOUGH-APPROVED-BALANCE u12)
+(define-constant ERR-UNAUTHORIZED u101)
+(define-constant ERR-NON-SUFFICIENT-FUNDS u102)
+(define-constant ERR-INVALID-SPENDER u103)
+(define-constant ERR-ZERO-VALUE u104)
+(define-constant ERR-NOT-ENOUGH-APPROVED-BALANCE u105)
 (define-constant contract-owner tx-sender)
 ;; Storage
 (define-data-var token-uri (optional (string-utf8 256)) none)
 (define-data-var total-supply uint u0)
-(define-map allowances {spender: principal, owner: principal} {allowance: uint})
+(define-map allowances {spender: principal, owner: principal} uint)
 (impl-trait .sip-010-trait.sip-010-trait)
 
 
@@ -41,38 +41,16 @@
     (is-eq contract-owner tx-sender)
 )
 
-(define-private (get-allowance-of (spender principal) (owner principal))
+(define-private (get-allowance-of (owner principal) (spender principal))
     (default-to u0
-        (get allowance (map-get? allowances {spender: spender, owner: owner}))))
+        (map-get? allowances {spender: spender, owner: owner})))
 
-;; Increase-Allowance
-(define-private (increase-allowance (amount uint) (spender principal) (owner principal))
-    (let ((allowance (get-allowance-of spender owner)))
-        (begin 
-            (asserts! ( >= amount u0) (err amount))
-            (map-set allowances {spender: spender, owner: owner}
-            {allowance:  (+ allowance amount)})
-            (ok true)
-        )
-    )
+
+
+;; Update-Allowance
+(define-private (update-allowance (amount uint) (owner principal) (spender principal))
+    (map-set allowances {spender: spender, owner: owner} amount)
 )
-
-;; Decrease-Allowance
-(define-private (decrease-allowance (amount uint) (spender principal) (owner principal))
-    (let ((allowance (get-allowance-of spender owner)))
-        (if (or (> amount allowance) (<= amount u0))
-            true
-            (begin 
-                (map-set allowances
-                    {spender: spender, owner: owner}
-                    {allowance: ( - allowance amount)}
-                )
-                true
-            )
-        )
-    )
-)
-
 ;; Get Balance
 
 (define-private (get-balance-of (owner principal))
@@ -85,26 +63,24 @@
     (stx-transfer? amount tx-sender contract-owner))
 
 (define-public (allowance-of (owner principal) (spender principal) )
-    (ok (get-allowance-of spender owner))
+    (ok (get-allowance-of owner spender))
 )
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
     (begin
-        (asserts! ( > amount u0) (err ERR-ZERO-VALUE))
         (asserts! (is-eq sender tx-sender) (err ERR-UNAUTHORIZED))
-        (asserts! (> (get-balance-of sender) u0) (err ERR-ZERO-VALUE))
-        (try! (ft-transfer? vibes-token amount sender recipient))
-        (ok true)
+        (ft-transfer? vibes-token amount sender recipient)
     )
 )
 
 (define-public (transfer-from (amount uint) (owner principal) (spender principal) (recipient principal) )
     (begin
-        (asserts! (> amount u0) (err ERR-ZERO-VALUE))
         (asserts! (is-eq tx-sender spender) (err ERR-UNAUTHORIZED))
-        (asserts! (>= (get-allowance-of spender owner) amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
-         (try! (ft-transfer? vibes-token amount owner recipient))
-         (decrease-allowance amount spender owner)
-         (ok true)
+        (let 
+            ((allowance (get-allowance-of owner spender)))
+            (asserts! (>= allowance amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
+            (update-allowance (- allowance amount) owner spender)
+        )
+        (ft-transfer? vibes-token amount owner recipient)
     )
 )
 
@@ -118,10 +94,7 @@
 (define-public (burn (amount uint) (sender principal))
     (begin 
          (asserts! (is-eq tx-sender sender) (err ERR-UNAUTHORIZED))
-         (let ((balance (get-balance-of sender)))
-            (asserts! (>= balance amount) (err ERR-NON-SUFFICIENT-FUNDS))
-            (ft-burn? vibes-token amount sender)
-         )
+         (ft-burn? vibes-token amount sender)
     )
 )
 
@@ -129,14 +102,7 @@
 (define-public (approve (amount uint) (owner principal) (spender principal))
     (begin 
         (asserts! (is-eq tx-sender owner) (err ERR-INVALID-SPENDER))
-        (increase-allowance amount spender tx-sender)
-    )
-)
-
-(define-public (decrease-approved-allowance (amount uint ) (owner principal) (spender principal))
-    (begin 
-        (asserts! (is-eq tx-sender owner) (err ERR-UNAUTHORIZED))
-        (decrease-allowance amount spender owner)
+        (update-allowance amount owner spender)
         (ok true)
     )
 )
