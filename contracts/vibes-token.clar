@@ -1,6 +1,5 @@
 (define-fungible-token vibes-token)
 (define-constant E-UNAUTH u101) ;; UN-AUTHORIZED
-(define-constant E-NSF u102) ;; NOT SUFFICIENT FUNDS
 (define-constant E-IS u103) ;; INVALID SPENDER
 (define-constant E-ZV u104) ;; ZERO VALUE
 (define-constant E-NEAB u105) ;; NOT ENOUGH APPROVED BALANCE
