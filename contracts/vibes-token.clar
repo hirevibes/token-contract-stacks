@@ -1,11 +1,12 @@
 (define-fungible-token vibes-token)
-(define-constant ERR-UNAUTHORIZED u101)
-(define-constant ERR-NON-SUFFICIENT-FUNDS u102)
-(define-constant ERR-INVALID-SPENDER u103)
-(define-constant ERR-ZERO-VALUE u104)
-(define-constant ERR-NOT-ENOUGH-APPROVED-BALANCE u105)
-(define-constant contract-owner tx-sender)
+(define-constant E-UNAUTH u101) ;; UN-AUTHORIZED
+(define-constant E-NSF u102) ;; NOT SUFFICIENT FUNDS
+(define-constant E-IS u103) ;; INVALID SPENDER
+(define-constant E-ZV u104) ;; ZERO VALUE
+(define-constant E-NEAB u105) ;; NOT ENOUGH APPROVED BALANCE
+
 ;; Storage
+(define-data-var contract-owner principal tx-sender)
 (define-data-var token-uri (optional (string-utf8 256)) none)
 (define-data-var total-supply uint u0)
 (define-map allowances {spender: principal, owner: principal} uint)
@@ -13,7 +14,7 @@
 
 
 (define-read-only (get-name)
-    (ok "Hirevibes"))
+    (ok "HireVibes"))
 
 (define-read-only (get-symbol)
     (ok "VIBES"))
@@ -31,14 +32,17 @@
     (ok (var-get token-uri)))
 
 (define-read-only (get-contract-owner)
-    (ok contract-owner)
+    (ok (var-get contract-owner))
 )
 
 ;; PRIVATE FUNCTIONS
 
 ;; check if the tx sender is the owner
 (define-private (is-owner)
-    (is-eq contract-owner tx-sender)
+    (let 
+        ((owner (var-get contract-owner)))
+        (is-eq owner tx-sender)
+    )
 )
 
 (define-private (get-allowance-of (owner principal) (spender principal))
@@ -58,26 +62,36 @@
 )
 
 ;; PUBLIC FUNCTIONS
+(define-public (set-owner (new-owner principal))
+    (begin
+        (asserts! (is-owner) (err E-UNAUTH))
+        (ok (var-set contract-owner new-owner))
+    )
+)
 
 (define-public (donate (amount uint)) 
-    (stx-transfer? amount tx-sender contract-owner))
+    (let
+        ((owner (var-get contract-owner)))
+        (stx-transfer? amount tx-sender owner)
+    )
+)
 
 (define-public (allowance-of (owner principal) (spender principal) )
     (ok (get-allowance-of owner spender))
 )
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
     (begin
-        (asserts! (is-eq sender tx-sender) (err ERR-UNAUTHORIZED))
+        (asserts! (is-eq sender tx-sender) (err E-UNAUTH))
         (ft-transfer? vibes-token amount sender recipient)
     )
 )
 
 (define-public (transfer-from (amount uint) (owner principal) (spender principal) (recipient principal) )
     (begin
-        (asserts! (is-eq tx-sender spender) (err ERR-UNAUTHORIZED))
+        (asserts! (is-eq tx-sender spender) (err E-UNAUTH))
         (let 
             ((allowance (get-allowance-of owner spender)))
-            (asserts! (>= allowance amount) (err ERR-NOT-ENOUGH-APPROVED-BALANCE))
+            (asserts! (>= allowance amount) (err E-NEAB))
             (update-allowance (- allowance amount) owner spender)
         )
         (ft-transfer? vibes-token amount owner recipient)
@@ -86,14 +100,14 @@
 
 (define-public (set-token-uri (value (string-utf8 256)))
     (begin
-        (asserts! (is-owner) (err ERR-UNAUTHORIZED))
+        (asserts! (is-owner) (err E-UNAUTH))
         (ok (var-set token-uri (some value)))
     )
 )
 
 (define-public (burn (amount uint) (sender principal))
     (begin 
-         (asserts! (is-eq tx-sender sender) (err ERR-UNAUTHORIZED))
+         (asserts! (is-eq tx-sender sender) (err E-UNAUTH))
          (ft-burn? vibes-token amount sender)
     )
 )
@@ -101,7 +115,7 @@
 ;; approve
 (define-public (approve (amount uint) (owner principal) (spender principal))
     (begin 
-        (asserts! (is-eq tx-sender owner) (err ERR-INVALID-SPENDER))
+        (asserts! (is-eq tx-sender owner) (err E-IS))
         (update-allowance amount owner spender)
         (ok true)
     )
@@ -110,7 +124,7 @@
 ;; mint
 (define-private (mint (amount uint) (recipient principal))
     (begin 
-        (asserts! ( > amount u0) (err ERR-ZERO-VALUE))
+        (asserts! ( > amount u0) (err E-ZV))
         (var-set total-supply (+ (var-get total-supply) amount))
         (ft-mint? vibes-token amount recipient)
     )
