@@ -126,7 +126,7 @@ Clarinet.test({
 
 
 Clarinet.test({
-    name: "Ensume that spender can transform the token from approved allowance",
+    name: "Ensure that spender can transform the token from approved allowance",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const owner = accounts.get("deployer")!;
         const spender = accounts.get("wallet_1")!;
@@ -165,5 +165,41 @@ Clarinet.test({
             `${owner.address}${asset_id_postfix}`
         )
         block.receipts[2].result.expectOk().expectUint(approved_amount - transferred_amount)
+    }
+})
+
+Clarinet.test({
+    name: "Ensure that onwer can set the new-owner",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const owner = accounts.get("deployer")!;
+        const newOwner = accounts.get("wallet_1")!;
+
+        const block = chain.mineBlock([
+            Tx.contractCall(contract_name, "set-owner",[
+                types.principal(newOwner.address)
+            ] , owner.address),
+            Tx.contractCall(contract_name, "get-contract-owner", [], newOwner.address)
+        ])
+        
+        block.receipts[0].result.expectOk().expectBool(true);
+        assertEquals(block.receipts[1].result.expectOk(), newOwner.address)
+    }
+})
+
+Clarinet.test({
+    name: "Ensure that non-onwer cann't set the new-owner",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const owner = accounts.get("deployer")!;
+        const nonOwner = accounts.get("wallet_1")!;
+
+        const block = chain.mineBlock([
+            Tx.contractCall(contract_name, "set-owner",[
+                types.principal(nonOwner.address)
+            ] , nonOwner.address),
+            Tx.contractCall(contract_name, "get-contract-owner", [], nonOwner.address)
+        ])
+        assertEquals(block.receipts[1].result.expectOk(), owner.address)
+        block.receipts[0].result.expectErr().expectUint(101);
+        
     }
 })
