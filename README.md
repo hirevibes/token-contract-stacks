@@ -31,3 +31,6 @@
 
 
 *Users that have staked EOS-HV-Tokens will be able to claim their new VIBES tokens without unstaking 
+
+
+Token contract live on Stacks can be seen here: https://explorer.hiro.so/txid/SP27BB1Y2DGSXZHS7G9YHKTSH6KQ6BD3QG0AN3CR9.vibes-token?chain=mainnet
